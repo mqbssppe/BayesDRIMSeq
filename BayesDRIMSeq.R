@@ -158,7 +158,7 @@ laplaceApproxHyper <- function(x,y,method,samples,lambdaRate){
 	warningCriterion <- max( c(max(abs(parEEmodel - parDTUmodel1)), max(abs(parEEmodel - parDTUmodel2))))
 	if (is.na(warningCriterion)==TRUE){warningCriterion <- 0}
 	#print(paste("warningCriterion = ", warningCriterion))
-	if ((warningCriterion < 0.10)&(probDTU > 0.8)){probDTU <- fdr <- 0; cat("WARNING: not passed diagnosing test of convergence.","\n")}
+	if ((warningCriterion < 0.05)&(probDTU > 0.95)){probDTU <- fdr <- 0; cat("WARNING: not passed diagnosing test of convergence.","\n")}
 
 	warningCriterion <- max(abs(parDTUmodel1 - parDTUmodel2))
 	if (is.na(warningCriterion)==TRUE){warningCriterion <- 0}
@@ -176,7 +176,13 @@ laplaceApproxHyper <- function(x,y,method,samples,lambdaRate){
 
 ####################################################################################################################################
 ####################################################################################################################################
-laplaceDM <- function(count_data, gene_data, grouping, min_reads_filter, nCores, lambdaRate){
+laplaceDM <- function(count_data, gene_data, grouping, min_reads_filter, nCores, lambdaRate, output_prefix = "tmp"){
+	myTMPfolder <- paste0("BayesDRIMSeq_", output_prefix)
+	if(dir.exists(myTMPfolder)){stop(paste0("Directory: `", myTMPfolder,"` exists, please give different output_prefix."))}
+	system(paste0("mkdir ", myTMPfolder))
+	setwd(myTMPfolder)
+	
+
 	if(missing(min_reads_filter)){min_reads_filter <- 20}
 	if(missing(count_data)){stop("`count_data` not provided.")}
 	if(missing(lambdaRate)){stop("`lambdaRate` not provided.")}
@@ -197,19 +203,24 @@ laplaceDM <- function(count_data, gene_data, grouping, min_reads_filter, nCores,
 	#Filter Genes:
 	nTotal <- rowSums(count_data)
 	lowExpressedTranscripts <- which(nTotal < min_reads_filter*nCols)
-	count_data <- count_data[-lowExpressedTranscripts,]
+	if(length(lowExpressedTranscripts) > 0){
+		count_data <- count_data[-lowExpressedTranscripts,]
+	}
 	cat(paste("Raw number of genes: ", length(unique(gene_data))),"\n")
 	cat(paste("Raw number of transcripts: ", nRows),"\n")
 	cat(paste("low expressed transcripts: ", length(lowExpressedTranscripts)),"\n")
-	genes <- gene_data[-lowExpressedTranscripts]
+	if(length(lowExpressedTranscripts) > 0){
+		genes <- gene_data[-lowExpressedTranscripts]
+	}
 	cat(paste("Filtered gene list: ", length(unique(genes))),"\n")
 
 	nGenes <- length(unique(genes))
 	genePartition <- floor(seq(1,nGenes,length = nCores+1))
 	genePartition[nCores+1] <- nGenes
+	genePartition[1] <- 0
 	laplacePosteriorProbs <- vector("list",nCores)
 	for(k in 1:nCores){
-		subsetOfGenes <- genePartition[k]:genePartition[k+1]
+		subsetOfGenes <- (genePartition[k] + 1):genePartition[k+1]
 		laplacePosteriorProbs[[k]] <- data.frame(geneNames = unique(genes)[subsetOfGenes],probDE = numeric(length(subsetOfGenes)),FDR1 = numeric(length(subsetOfGenes)), maxDiff = numeric(length(subsetOfGenes)),FDR2 = numeric(length(subsetOfGenes)),b1 = numeric(length(subsetOfGenes)),b2 = numeric(length(subsetOfGenes)),b0 = numeric(length(subsetOfGenes)),switchCondition = numeric(length(subsetOfGenes)))
 	}
 	cat(paste('Applying Laplace Approximation With Sampling Importance Resampling'),'\n')
@@ -218,7 +229,7 @@ laplaceDM <- function(count_data, gene_data, grouping, min_reads_filter, nCores,
 	foreach(k=1:nCores) %dopar% {
 		gIter <- 0
 		switchViolations <- 0
-		subsetOfGenes <- genePartition[k]:genePartition[k+1]
+		subsetOfGenes <- (genePartition[k] + 1):genePartition[k+1]
 		genesNameSubset <- unique(genes)[subsetOfGenes]
 		for (g in genesNameSubset){
 			gIter <- gIter + 1
@@ -258,7 +269,7 @@ laplaceDM <- function(count_data, gene_data, grouping, min_reads_filter, nCores,
 	for (k in 2:nCores){
 		ll <- rbind(ll,laplacePosteriorProbs[[k]])
 	}
-
+	setwd("../")
 	u <- ll$maxDiff
 	perm <- order(u,decreasing=TRUE)
 	lapPerm <- ll[perm,]
@@ -292,7 +303,6 @@ laplaceDM <- function(count_data, gene_data, grouping, min_reads_filter, nCores,
 	colnames(ll)[4] <- 'FDRraw'
 	return(ll)
 	#write.table(ll, file = "laplaceDM.HyperPrior.txt",quote=FALSE,row.names=FALSE)
-
 }
 
 
