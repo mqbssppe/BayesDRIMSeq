@@ -14,18 +14,20 @@ nTranscripts <- length(genes)		# total number of transcripts
 nSamplesA <- 3				# number of replicates for 1st condition 
 nSamplesB <- 3				# number of replicates for 2nd condition
 nSamples <- nSamplesA + nSamplesB	# total number of replicates
-# simulate data.frame with counts (no DTU evidence at all)
+# 	Simulate data.frame with counts (no DTU evidence at all)
 countDataFrame <- data.frame( matrix(rpois(n = nTranscripts*nSamples, lambda = 30), nrow = nTranscripts, ncol = nSamples) )
 
-# call the BayesDRIMSEQ function as:
+# 	Call the BayesDRIMSEQ function as:
 myRes <- laplaceDM(
 	count_data = countDataFrame, 			# data.frame of counts with dimension: nTranscripts x nSamples
 	gene_data = genes, 				# factor with `nGenes` levels with length: nTranscripts
-	grouping = as.factor(c(rep('A',3),rep('B',3))), # factor with 2 levels and length nSamples
+	grouping = as.factor(
+		c(rep('A',nSamplesA),
+			rep('B',nSamplesB))), 		# factor with 2 levels and length nSamples
 	min_reads_filter = 20, 				# positive integer used to filter our low expressed transcripts
 	nCores = 8, 					# number of paraller workers
 	lambdaRate = 0.5				# positive prior parameter \lambda
 	)
 
 
-# RESULTS: Our FDR decision rule d_4 corresponds to `myRes$fdrTrust`
+# 	RESULTS: Our FDR decision rule d_4 corresponds to `myRes$fdrTrust`
