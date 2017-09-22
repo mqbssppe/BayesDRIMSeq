@@ -24,7 +24,7 @@ myRes <- laplaceDM(
 		grouping = as.factor(
 			c(rep('A',nSamplesA),
 				rep('B',nSamplesB))), 	# factor with 2 levels and length nSamples
-		min_reads_filter = 20, 			# positive integer used to filter our low expressed transcripts
+		min_reads_filter = 20, 			# threshold used to filter our low expressed transcripts
 		nCores = 8, 				# number of paraller workers
 		lambdaRate = 0.5			# positive prior parameter \lambda
 	)
