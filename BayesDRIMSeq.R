@@ -158,7 +158,8 @@ laplaceApproxHyper <- function(x,y,method,samples,lambdaRate){
 	warningCriterion <- max( c(max(abs(parEEmodel - parDTUmodel1)), max(abs(parEEmodel - parDTUmodel2))))
 	if (is.na(warningCriterion)==TRUE){warningCriterion <- 0}
 	#print(paste("warningCriterion = ", warningCriterion))
-	if ((warningCriterion < 0.05)&(probDTU > 0.95)){probDTU <- fdr <- 0; cat("WARNING: not passed diagnosing test of convergence.","\n")}
+#	if ((warningCriterion < 0.05)&(probDTU > 0.95)){probDTU <- fdr <- 0; cat("WARNING: not passed diagnosing test of convergence.","\n")}
+	if ((warningCriterion < 0.085)&(probDTU > 0.85)){probDTU <- fdr <- 0; cat("WARNING: not passed diagnosing test of convergence.","\n")}
 
 	warningCriterion <- max(abs(parDTUmodel1 - parDTUmodel2))
 	if (is.na(warningCriterion)==TRUE){warningCriterion <- 0}
